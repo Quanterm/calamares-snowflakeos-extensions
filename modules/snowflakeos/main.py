@@ -27,14 +27,31 @@ flakefile = """
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    snowflake = {
+      url = "github:snowflakelinux/snowflake-modules";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs }: {
     nixosConfigurations.@@hostname@@ = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      modules = [ ./configuration.nix ];
+      modules = [
+        ./configuration.nix
+        ./snowflake.nix
+        snowflake.nixosModules.snowflake
+      ];
     };
   };
+}
+"""
+
+snowflakefile = """
+{ config, pkgs, ... }:
+
+{
+  snowflakeos.gnome.enable = true;
+  snowflakeos.osInfo.enable = true;
 }
 """
 
@@ -282,6 +299,7 @@ def run():
     root_mount_point = gs.value("rootMountPoint")
     config = os.path.join(root_mount_point, "etc/nixos/configuration.nix")
     flakepath = os.path.join(root_mount_point, "etc/nixos/flake.nix")
+    snowflakepath = os.path.join(root_mount_point, "etc/nixos/snowflake.nix")
     fw_type = gs.value("firmwareType")
     bootdev = "nodev" if gs.value("bootLoader") is None else gs.value(
         "bootLoader")['installPath']
@@ -516,6 +534,10 @@ def run():
     # Write the flake.nix file
     libcalamares.utils.host_env_process_output(
         ["cp", "/dev/stdin", flakepath], None, flake)
+
+    # Write the snowflake.nix file
+    libcalamares.utils.host_env_process_output(
+        ["cp", "/dev/stdin", snowflakepath], None, snowflakefile)
 
     status = _("Installing SnowflakeOS")
     libcalamares.job.setprogress(0.3)
