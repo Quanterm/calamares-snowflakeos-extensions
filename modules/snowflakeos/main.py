@@ -23,6 +23,21 @@ _ = gettext.translation("calamares-python",
 # The following strings contain pieces of a nix-configuration file.
 # They are adapted from the default config generated from the nixos-generate-config command.
 
+flakefile = """
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  };
+
+  outputs = { self, nixpkgs }: {
+    nixosConfigurations.@@hostname@@ = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [ ./configuration.nix ];
+    };
+  };
+}
+"""
+
 cfghead = """# Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
@@ -87,16 +102,6 @@ cfgnetworkmanager = """  # Enable networking
 
 """
 
-cfgconnman = """  # Enable networking
-  services.connman.enable = true;
-
-"""
-
-cfgnmapplet = """  # Enable network manager applet
-  programs.nm-applet.enable = true;
-
-"""
-
 cfgtime = """  # Set your time zone.
   time.timeZone = "@@timezone@@";
 
@@ -127,81 +132,6 @@ cfggnome = """  # Enable the X11 windowing system.
   # Enable the GNOME Desktop Environment.
   services.xserver.displayManager.gdm.enable = true;
   services.xserver.desktopManager.gnome.enable = true;
-
-"""
-
-cfgplasma = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the KDE Plasma Desktop Environment.
-  services.xserver.displayManager.sddm.enable = true;
-  services.xserver.desktopManager.plasma5.enable = true;
-
-"""
-
-cfgxfce = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the XFCE Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.xfce.enable = true;
-
-"""
-
-cfgpantheon = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the Pantheon Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.pantheon.enable = true;
-
-"""
-
-cfgcinnamon = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the Cinnamon Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.cinnamon.enable = true;
-
-"""
-
-cfgmate = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the MATE Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.mate.enable = true;
-
-"""
-
-cfgenlightenment = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the Enlightenment Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.enlightenment.enable = true;
-
-  # Enable acpid
-  services.acpid.enable = true;
-
-"""
-
-cfglxqt = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the LXQT Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.lxqt.enable = true;
-
-"""
-
-cfglumina = """  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the Lumina Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.lumina.enable = true;
 
 """
 
@@ -246,7 +176,6 @@ cfgusers = """  # Define a user account. Don't forget to set a password with ‘
     isNormalUser = true;
     description = "@@fullname@@";
     extraGroups = [ @@groups@@ ];
-    packages = with pkgs; [@@pkgs@@];
   };
 
 """
@@ -263,11 +192,6 @@ cfgautologingdm = """  # Workaround for GNOME autologin: https://github.com/NixO
 
 """
 
-cfgautologintty = """  # Enable automatic login for the user.
-  services.getty.autologinUser = "@@username@@";
-
-"""
-
 cfgunfree = """  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
@@ -278,6 +202,7 @@ cfgpkgs = """  # List packages installed in system profile. To search, run:
   environment.systemPackages = with pkgs; [
   #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
   #  wget
+    @@pkgs@@
   ];
 
 """
@@ -301,6 +226,10 @@ cfgtail = """  # Some programs need SUID wrappers, can be configured further or 
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 
+  nix.extraOptions = ''
+    experimental-features = nix-command flakes
+  '';
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It‘s perfectly fine and recommended to leave
@@ -314,7 +243,7 @@ cfgtail = """  # Some programs need SUID wrappers, can be configured further or 
 
 
 def pretty_name():
-    return _("Installing NixOS.")
+    return _("Installing SnowflakeOS.")
 
 
 status = pretty_name()
@@ -337,20 +266,22 @@ def catenate(d, key, *values):
     d[key] = "".join(values)
 
 def run():
-    """NixOS Configuration."""
+    """SnowflakeOS Configuration."""
 
     global status
-    status = _("Configuring NixOS")
+    status = _("Configuring SnowflakeOS")
     libcalamares.job.setprogress(0.1)
 
     # Create initial config file
     cfg = cfghead
+    flake = flakefile
     gs = libcalamares.globalstorage
     variables = dict()
 
     # Setup variables
     root_mount_point = gs.value("rootMountPoint")
     config = os.path.join(root_mount_point, "etc/nixos/configuration.nix")
+    flakepath = os.path.join(root_mount_point, "etc/nixos/flake.nix")
     fw_type = gs.value("firmwareType")
     bootdev = "nodev" if gs.value("bootLoader") is None else gs.value(
         "bootLoader")['installPath']
@@ -408,22 +339,15 @@ def run():
                     "Failed to add {} to /crypto_keyfile.bin".format(part["luksMapperName"]))
                 return (_("cryptsetup failed"), _("Failed to add {} to /crypto_keyfile.bin".format(part["luksMapperName"])))
 
-    status = _("Configuring NixOS")
+    status = _("Configuring SnowflakeOS")
     libcalamares.job.setprogress(0.18)
 
     cfg += cfgnetwork
-    if gs.value("packagechooser_packagechooser") == "enlightenment":
-        cfg += cfgconnman
-    else:
-        cfg += cfgnetworkmanager
+    cfg += cfgnetworkmanager
 
-    if (gs.value("packagechooser_packagechooser") == "mate") | (gs.value("packagechooser_packagechooser") == "lxqt") | (gs.value("packagechooser_packagechooser") == "lumina"):
-        cfg += cfgnmapplet
-
-    if (gs.value("hostname") is None):
-        catenate(variables, "hostname", "nixos")
-    else:
-        catenate(variables, "hostname", gs.value("hostname"))
+    # Figure this out
+    hostname = "snowflakeos" if (gs.value("hostname") is None) else gs.value("hostname")
+    catenate(variables, "hostname", hostname)
 
     if (gs.value("locationRegion") is not None and gs.value("locationZone") is not None):
         cfg += cfgtime
@@ -441,24 +365,7 @@ def run():
                 catenate(variables, conf, localeconf.get(conf).split("/")[0])
 
     # Choose desktop environment
-    if gs.value("packagechooser_packagechooser") == "gnome":
-        cfg += cfggnome
-    elif gs.value("packagechooser_packagechooser") == "plasma":
-        cfg += cfgplasma
-    elif gs.value("packagechooser_packagechooser") == "xfce":
-        cfg += cfgxfce
-    elif gs.value("packagechooser_packagechooser") == "pantheon":
-        cfg += cfgpantheon
-    elif gs.value("packagechooser_packagechooser") == "cinnamon":
-        cfg += cfgcinnamon
-    elif gs.value("packagechooser_packagechooser") == "mate":
-        cfg += cfgmate
-    elif gs.value("packagechooser_packagechooser") == "enlightenment":
-        cfg += cfgenlightenment
-    elif gs.value("packagechooser_packagechooser") == "lxqt":
-        cfg += cfglxqt
-    elif gs.value("packagechooser_packagechooser") == "lumina":
-        cfg += cfglumina
+    cfg += cfggnome
 
     if (gs.value("keyboardLayout") is not None and gs.value("keyboardVariant") is not None):
         cfg += cfgkeymap
@@ -517,8 +424,7 @@ def run():
                     libcalamares.utils.error("Setting vconsole keymap to {} will fail, using default".format(
                         gs.value("keyboardVConsoleKeymap")))
 
-    if gs.value("packagechooser_packagechooser") is not None and gs.value("packagechooser_packagechooser") != "":
-        cfg += cfgmisc
+    cfg += cfgmisc
 
     if (gs.value("username") is not None):
         fullname = gs.value("fullname")
@@ -529,28 +435,17 @@ def run():
         catenate(variables, "fullname", fullname)
         catenate(variables, "groups", (" ").join(
             ["\"" + s + "\"" for s in groups]))
-        if (gs.value("autoLoginUser") is not None and gs.value("packagechooser_packagechooser") is not None and gs.value("packagechooser_packagechooser") != ""):
+        if (gs.value("autoLoginUser") is not None):
             cfg += cfgautologin
-            if (gs.value("packagechooser_packagechooser") == "gnome"):
-                cfg += cfgautologingdm
-        elif (gs.value("autoLoginUser") is not None):
-            cfg += cfgautologintty
+            cfg += cfgautologingdm
+
 
     # Check if unfree packages are allowed
-    free = True
-    if gs.value("packagechooser_unfree") is not None:
-        if gs.value("packagechooser_unfree") == "unfree":
-            free = False
-            cfg += cfgunfree
-
+    cfg += cfgunfree
     cfg += cfgpkgs
     # Use firefox as default as a graphical web browser, and add kate to plasma desktop
-    if gs.value("packagechooser_packagechooser") == "plasma":
-        catenate(variables, "pkgs", "\n      firefox\n      kate\n    #  thunderbird\n    ")
-    elif gs.value("packagechooser_packagechooser") != "":
-        catenate(variables, "pkgs", "\n      firefox\n    #  thunderbird\n    ")
-    else:
-        catenate(variables, "pkgs", "")
+    # switch to nix profile
+    catenate(variables, "pkgs", "firefox")
 
     cfg += cfgtail
     version = ".".join(subprocess.getoutput(
@@ -576,6 +471,7 @@ def run():
     for key in variables.keys():
         pattern = "@@{key}@@".format(key=key)
         cfg = cfg.replace(pattern, str(variables[key]))
+        flake = flake.replace(pattern, str(variables[key]))
 
     # Mount swap partition
     for part in gs.value("partitions"):
@@ -600,7 +496,7 @@ def run():
                     return (_("swapon failed to activate swap " + part["device"]), _("failed while activating:" + "/dev/mapper/" + part["device"]))
             break
 
-    status = _("Generating NixOS configuration")
+    status = _("Generating SnowflakeOS configuration")
     libcalamares.job.setprogress(0.25)
 
     try:
@@ -612,40 +508,22 @@ def run():
             libcalamares.utils.error(e.output.decode("utf8"))
         return (_("nixos-generate-config failed"), _(e.output.decode("utf8")))
 
-    # Check for unfree stuff in hardware-configuration.nix
-    hf = open(root_mount_point + "/etc/nixos/hardware-configuration.nix", "r")
-    htxt = hf.read()
-    search = re.search("boot\.extraModulePackages = \[ (.*) \];", htxt)
-
-    # Check if any extraModulePackages are defined, and remove if only free packages are allowed
-    if search is not None and free:
-        expkgs = search.group(1).split(" ")
-        for pkg in expkgs:
-            p = ".".join(pkg.split(".")[3:])
-            # Check package p is unfree
-            isunfree = subprocess.check_output(["nix-instantiate", "--eval", "--strict", "-E",
-                                               "with import <nixpkgs> {{}}; pkgs.linuxKernel.packageAliases.linux_default.{}.meta.unfree".format(p), "--json"], stderr=subprocess.STDOUT)
-            if isunfree == b'true':
-                libcalamares.utils.warning(
-                    "{} is marked as unfree, removing from hardware-configuration.nix".format(p))
-                expkgs.remove(pkg)
-        hardwareout = re.sub(
-            "boot\.extraModulePackages = \[ (.*) \];", "boot.extraModulePackages = [ {}];".format("".join(map(lambda x: x+" ", expkgs))), htxt)
-        # Write the hardware-configuration.nix file
-        libcalamares.utils.host_env_process_output(["cp", "/dev/stdin",
-                                                    root_mount_point+"/etc/nixos/hardware-configuration.nix"], None, hardwareout)
 
     # Write the configuration.nix file
     libcalamares.utils.host_env_process_output(
         ["cp", "/dev/stdin", config], None, cfg)
 
-    status = _("Installing NixOS")
+    # Write the flake.nix file
+    libcalamares.utils.host_env_process_output(
+        ["cp", "/dev/stdin", flakepath], None, flake)
+
+    status = _("Installing SnowflakeOS")
     libcalamares.job.setprogress(0.3)
 
     # Install customizations
     try:
         output = ""
-        proc = subprocess.Popen(["pkexec", "nixos-install", "--no-root-passwd", "--root", root_mount_point], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(["pkexec", "nixos-install", "--no-root-passwd", "--root", root_mount_point, "--no-channel-copy", "--flake", root_mount_point + "/etc/nixos#" + hostname], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         while True:
             line = proc.stdout.readline().decode("utf-8")
             output += line

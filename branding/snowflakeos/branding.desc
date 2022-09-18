@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: CC0-1.0
 #
 ---
-componentName:  nixos
+componentName:  snowflakeos
 
 
 ### WELCOME / OVERALL WORDING
@@ -116,12 +116,12 @@ navigation: widget
 # are set to "true" (they can also be overridden).
 strings:
     productName:         "@{NAME}"
-    shortProductName:    NixOS
+    shortProductName:    SnowflakeOS
     version:             
     shortVersion:        
-    versionedName:       NixOS
-    shortVersionedName:  NixOS
-    bootloaderEntryName: NixOS
+    versionedName:       SnowflakeOS
+    shortVersionedName:  SnowflakeOS
+    bootloaderEntryName: SnowflakeOS
     productUrl:          https://nixos.org/
     supportUrl:          https://nixos.org/manual/nixos
     knownIssuesUrl:      https://github.com/NixOS/nixpkgs/issues
