@@ -23,8 +23,7 @@ _ = gettext.translation("calamares-python",
 # The following strings contain pieces of a nix-configuration file.
 # They are adapted from the default config generated from the nixos-generate-config command.
 
-flakefile = """
-{
+flakefile = """{
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     snowflake = {
@@ -33,7 +32,7 @@ flakefile = """
     };
   };
 
-  outputs = { self, nixpkgs }: {
+  outputs = { self, nixpkgs, snowflake }: {
     nixosConfigurations.@@hostname@@ = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
@@ -46,8 +45,7 @@ flakefile = """
 }
 """
 
-snowflakefile = """
-{ config, pkgs, ... }:
+snowflakefile = """{ config, pkgs, ... }:
 
 {
   snowflakeos.gnome.enable = true;
@@ -538,6 +536,9 @@ def run():
     # Write the snowflake.nix file
     libcalamares.utils.host_env_process_output(
         ["cp", "/dev/stdin", snowflakepath], None, snowflakefile)
+
+    libcalamares.utils.host_env_process_output(
+        ["chmod", "644", os.path.join(root_mount_point, "etc/nixos/flake.nix"), os.path.join(root_mount_point, "etc/nixos/snowflake.nix")], None)
 
     status = _("Installing SnowflakeOS")
     libcalamares.job.setprogress(0.3)
