@@ -32,20 +32,25 @@ flakefile = """{
     };
   };
 
-  outputs = { self, nixpkgs, snowflake }: {
-    nixosConfigurations.@@hostname@@ = nixpkgs.lib.nixosSystem {
+  outputs = { self, nixpkgs, snowflake, ... }@inputs:
+    let
       system = "x86_64-linux";
-      modules = [
-        ./configuration.nix
-        ./snowflake.nix
-        snowflake.nixosModules.snowflake
-      ];
+    in
+    {
+      nixosConfigurations.@@hostname@@ = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          ./configuration.nix
+          ./snowflake.nix
+          snowflake.nixosModules.snowflake
+        ];
+        specialArgs = { inherit inputs; inherit system; };
     };
   };
 }
 """
 
-snowflakefile = """{ config, pkgs, ... }:
+snowflakefile = """{ config, pkgs, inputs, system, ... }:
 
 {
   snowflakeos.gnome.enable = true;
