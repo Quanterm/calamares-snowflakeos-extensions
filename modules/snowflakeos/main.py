@@ -465,8 +465,9 @@ def run():
     cfg += cfgunfree
     cfg += cfgpkgs
     # Use firefox as default as a graphical web browser, and add kate to plasma desktop
-    # switch to nix profile
-    catenate(variables, "pkgs", "firefox")
+    # switch to nix profile. 
+    # Adding btrfs-utils and timeshift
+    catenate(variables, "pkgs", " btrfs-progs", "timeshift" ,"firefox")
 
     cfg += cfgtail
     version = ".".join(subprocess.getoutput(
